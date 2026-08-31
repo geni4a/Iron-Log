@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Iron Log">
+<meta name="theme-color" content="#1b1d1f">
+<title>Iron Log</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231b1d1f'/%3E%3Crect x='14' y='44' width='72' height='12' rx='2' fill='%23e8b33d'/%3E%3Crect x='8' y='34' width='10' height='32' rx='2' fill='%23ede9e3'/%3E%3Crect x='82' y='34' width='10' height='32' rx='2' fill='%23ede9e3'/%3E%3Crect x='2' y='40' width='7' height='20' rx='2' fill='%23ede9e3'/%3E%3Crect x='91' y='40' width='7' height='20' rx='2' fill='%23ede9e3'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231b1d1f'/%3E%3Crect x='14' y='44' width='72' height='12' rx='2' fill='%23e8b33d'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#1b1d1f;
+    --bg-elev:#232628;
+    --bg-elev-2:#2b2f32;
+    --ink:#ede9e3;
+    --ink-dim:#a9a49c;
+    --line:#3a3e41;
+    --accent:#e8b33d;
+    --accent-ink:#1b1d1f;
+    --teal:#4fa8a0;
+    --danger:#d9614f;
+    --radius:14px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:calc(72px + var(--safe-bottom));
+  }
+  h1,h2,h3{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;
+    font-weight:800;
+    letter-spacing:-0.02em;
+    text-transform:uppercase;
+    margin:0 0 14px;
+  }
+  h1{font-size:22px;letter-spacing:0.02em;}
+  h2{font-size:17px;color:var(--ink-dim);}
+  h3.group-title{font-size:13px;color:var(--accent);letter-spacing:0.08em;margin:20px 0 8px;}
+  a{color:var(--teal);text-decoration:none;}
+  .mono, .num, input[type=number], input[type=date], .plate, .score-num{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums;
+  }
+  /* Top bar */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    background:rgba(27,29,31,0.92);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    padding-top:var(--safe-top);
+  }
+  .topbar-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;
+  }
+  .brand{font-weight:800;letter-spacing:0.12em;font-size:15px;}
+  .brand::before{content:"⛭ ";color:var(--accent);}
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .date-chip{
+    font-size:11px;color:var(--ink-dim);
+    border:1px solid var(--line);border-radius:20px;padding:4px 10px;
+  }
+  .icon-btn{
+    width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg-elev-2);color:var(--ink-dim);
+    border:1px solid var(--line);font-size:14px;
+    font-family:inherit;padding:0;cursor:pointer;-webkit-appearance:none;
+  }
+  /* Main */
+  main{padding:16px;max-width:640px;margin:0 auto;}
+  .page{animation:fade .15s ease-out;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  .empty{color:var(--ink-dim);padding:24px 0;line-height:1.5;}
+  .empty a{color:var(--accent);}
+  /* Cards / lists */
+  .card{
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px;
+    margin-bottom:10px;
+  }
+  .today-list, .ex-list, .hist-list{list-style:none;margin:0 0 8px;padding:0;}
+  .today-item, .ex-item, .hist-item{
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    margin-bottom:8px;
+  }
+  .today-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .meta{display:block;font-size:12px;color:var(--ink-dim);margin-top:2px;}
+  .row-actions{display:flex;gap:6px;flex-shrink:0;}
+  /* Buttons */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    background:var(--accent);color:var(--accent-ink);
+    border:none;border-radius:10px;
+    padding:10px 14px;font-size:13.5px;font-weight:700;
+    cursor:pointer;text-align:center;
+  }
+  .btn.small{padding:7px 10px;font-size:12px;border-radius:8px;}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  .btn.teal{background:var(--teal);color:#0c1e1c;}
+  .btn.danger{background:transparent;color:var(--danger);border:1px solid rgba(217,97,79,0.5);}
+  .btn.block{width:100%;padding:13px;font-size:14px;}
+  .btn:active{transform:scale(0.97);}
+  /* Forms */
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
+  .field .hint{font-size:11px;color:var(--ink-dim);margin-top:4px;}
+  input[type=text], input[type=number], input[type=date], input[type=search], textarea, select{
+    width:100%;background:var(--bg-elev-2);border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;
+  }
+  textarea{min-height:80px;resize:vertical;}
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .form-actions{display:flex;gap:8px;margin-top:18px;}
+  /* Filters */
+  .filters{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px;margin-bottom:14px;
+  }
+  .filters input{font-size:13px;padding:9px 10px;}
+  .filters .full{grid-column:1/-1;}
+  .filter-label{font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px;}
+  /* Tags */
+  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+  .tag{
+    font-size:10.5px;padding:3px 8px;border-radius:20px;
+    background:var(--bg-elev-2);color:var(--ink-dim);border:1px solid var(--line);
+  }
+  .tag.primary{color:var(--accent);border-color:rgba(232,179,61,0.4);}
+  /* Alternatives / plate badge */
+  details.alt{margin-top:10px;}
+  details.alt > summary{
+    list-style:none;cursor:pointer;
+    font-size:12.5px;color:var(--teal);font-weight:700;
+    display:flex;align-items:center;gap:6px;
+  }
+  details.alt > summary::-webkit-details-marker{display:none;}
+  details.alt > summary::before{content:"⇄";}
+  .alt-body{padding-top:10px;}
+  .alt-row{
+    display:flex;align-items:center;gap:12px;
+    padding:10px 0;border-top:1px solid var(--line);
+  }
+  .alt-row:first-child{border-top:none;}
+  .plate{
+    width:44px;height:44px;flex-shrink:0;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 33% 28%, #f2c65e 0%, #d99e2c 55%, #8a641d 100%);
+    color:#1b1d1f;font-weight:800;font-size:11.5px;
+    border:3px solid #14181a;
+    box-shadow:inset 0 0 0 3px rgba(0,0,0,.22);
+  }
+  .alt-info{flex:1;min-width:0;}
+  .alt-info strong{font-size:13.5px;display:block;}
+  .alt-info .meta{margin-top:3px;}
+  /* Tabbar */
+  .tabbar{
+    position:fixed;bottom:0;left:0;right:0;z-index:30;
+    display:flex;
+    background:rgba(27,29,31,0.96);backdrop-filter:blur(10px);
+    border-top:1px solid var(--line);
+    padding-bottom:var(--safe-bottom);
+  }
+  .tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:10px 4px 8px;color:var(--ink-dim);font-size:10.5px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.04em;
+  }
+  .tab.active{color:var(--accent);}
+  .tab-icon{font-size:18px;line-height:1;}
+  /* Toast */
+  #toast{
+    position:fixed;left:50%;bottom:calc(84px + var(--safe-bottom));transform:translateX(-50%) translateY(10px);
+    background:var(--bg-elev-2);color:var(--ink);border:1px solid var(--line);
+    padding:10px 16px;border-radius:20px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;
+    z-index:50;max-width:90vw;text-align:center;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .modal-overlay{
+    position:fixed;inset:0;z-index:100;
+    background:rgba(0,0,0,0.55);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .modal-box{
+    background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;max-width:360px;width:100%;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+  }
+  .modal-box p{margin:0 0 18px;font-size:14.5px;line-height:1.5;color:var(--ink);}
+  .modal-actions{display:flex;gap:8px;}
+  .modal-actions .btn{flex:1;}
+  .toggle-group{display:flex;gap:6px;margin-bottom:14px;}
+  .toggle-group .btn{flex:1;}
+  hr.rule{border:none;border-top:1px solid var(--line);margin:20px 0;}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-top:1px solid var(--line);}
+  .kv:first-child{border-top:none;}
+  .progress-pill{
+    display:inline-block;font-size:12px;font-weight:700;
+    background:var(--bg-elev-2);border:1px solid var(--line);border-radius:20px;
+    padding:4px 12px;margin-bottom:12px;
+  }
+  .progress-pill.complete{color:var(--teal);border-color:rgba(79,168,160,0.5);}
+  .check-item{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 0;border-top:1px solid var(--line);
+  }
+  .check-item:first-child{border-top:none;}
+  .check-dot{
+    width:20px;height:20px;border-radius:50%;flex-shrink:0;
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;
+  }
+  .check-dot.done{background:var(--teal);border-color:var(--teal);color:#0c1e1c;}
+  .day-card{
+    background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;margin-bottom:12px;
+  }
+  .day-card h3{margin:0 0 4px;font-size:15px;color:var(--ink);letter-spacing:0.02em;}
+  .day-card .parts-line{font-size:12px;color:var(--ink-dim);margin-bottom:10px;}
+  .section-title{font-size:11.5px;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin:14px 0 6px;}
+  .split-edit-day{
+    background:var(--bg-elev-2);border:1px solid var(--line);border-radius:10px;
+    padding:12px;margin-bottom:10px;
+  }
+  .dropdown{position:relative;display:inline-block;margin-bottom:8px;}
+  .dropdown-content{
+    display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:15;
+    background:var(--bg-elev-2);border:1px solid var(--line);border-radius:10px;
+    min-width:200px;max-height:220px;overflow-y:auto;padding:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  }
+  .dropdown-content.open{display:block;}
+  .dropdown-check{
+    display:flex;align-items:center;gap:8px;font-size:13.5px;padding:6px 4px;
+    text-transform:none;letter-spacing:normal;color:var(--ink);
+  }
+  .dropdown-check input{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;}
+  .tag.group{color:var(--teal);border-color:rgba(79,168,160,0.4);background:rgba(79,168,160,0.12);}
+  .detail-block{white-space:pre-wrap;margin-top:4px;line-height:1.4;}
+  .checklist-scroll{
+    max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;
+    background:var(--bg-elev-2);padding:6px 10px;margin-bottom:8px;
+  }
+  .checklist-scroll label{
+    display:flex;align-items:center;gap:8px;padding:7px 2px;font-size:13.5px;
+    border-top:1px solid var(--line);
+  }
+  .checklist-scroll label:first-child{border-top:none;}
+  .checklist-scroll input{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;}
+  .group-card{
+    background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 14px;margin-bottom:10px;
+  }
+</style>
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <span class="brand">IRON LOG</span>
+      <div class="topbar-right">
+        <span class="date-chip mono" id="todayChip"></span>
+        <div class="dropdown">
+          <button type="button" class="icon-btn" id="menuToggle" title="Menu">☰</button>
+          <div id="topMenu" class="dropdown-content" style="right:0;left:auto;min-width:170px;">
+            <a class="dropdown-check" href="#/split">🗓 My Split</a>
+            <a class="dropdown-check" href="#/plan/generate">✨ Generate a Plan</a>
+            <a class="dropdown-check" href="#/groups">🔗 Exercise Groups</a>
+            <a class="dropdown-check" href="#/backup">⇩ Backup &amp; Restore</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main id="app"></main>
+
+  <nav class="tabbar">
+    <a href="#/" class="tab" data-route=""><span class="tab-icon">⌂</span><span>Home</span></a>
+    <a href="#/exercises" class="tab" data-route="exercises"><span class="tab-icon">☰</span><span>Exercises</span></a>
+    <a href="#/exercises/new" class="tab" data-route="exercises/new"><span class="tab-icon">+</span><span>Add</span></a>
+    <a href="#/history" class="tab" data-route="history"><span class="tab-icon">▤</span><span>History</span></a>
+  </nav>
+
+  <div id="toast"></div>
+
+<script>
+/* =========================================================
+   Iron Log — fully offline single-file gym tracker
+   Storage: IndexedDB (persists on-device, no network calls)
+   ========================================================= */
+
+/* ---------- tiny utils ---------- */
+function esc(s){
+  return (s===null||s===undefined?'':String(s)).replace(/[&<>"']/g, c=>(
+    {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]
+  ));
+}
+function parseList(str){
+  return (str||'').split(',').map(s=>s.trim()).filter(Boolean);
+}
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){
+  if(!d) return '';
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+}
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+function appConfirm(message, confirmLabel){
+  return new Promise(resolve=>{
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <p>${esc(message)}</p>
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" data-modal-cancel>Cancel</button>
+          <button type="button" class="btn danger" data-modal-ok>${esc(confirmLabel || 'Confirm')}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    function cleanup(result){
+      overlay.remove();
+      resolve(result);
+    }
+    overlay.querySelector('[data-modal-cancel]').addEventListener('click', ()=>cleanup(false));
+    overlay.querySelector('[data-modal-ok]').addEventListener('click', ()=>cleanup(true));
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) cleanup(false); });
+  });
+}
+
+/* ---------- IndexedDB layer ---------- */
+const DB_NAME = 'iron_log_db';
+const DB_VERSION = 3;
+
+function openDB(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e)=>{
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('exercises')){
+        db.createObjectStore('exercises', {keyPath:'id', autoIncrement:true});
+      }
+      if(!db.objectStoreNames.contains('history')){
+        const hs = db.createObjectStore('history', {keyPath:'id', autoIncrement:true});
+        hs.createIndex('by_exercise', 'exercise_id');
+      }
+      if(!db.objectStoreNames.contains('marked')){
+        db.createObjectStore('marked', {keyPath:'exercise_id'});
+      }
+      if(!db.objectStoreNames.contains('settings')){
+        db.createObjectStore('settings', {keyPath:'key'});
+      }
+      if(!db.objectStoreNames.contains('groups')){
+        db.createObjectStore('groups', {keyPath:'id', autoIncrement:true});
+      }
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+let _dbPromise = null;
+function getDB(){
+  if(!_dbPromise) _dbPromise = openDB();
+  return _dbPromise;
+}
+async function getAll(store){
+  const db = await getDB();
+  return new Promise((resolve,reject)=>{
+    const req = db.transaction([store],'readonly').objectStore(store).getAll();
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function getOne(store, key){
+  const db = await getDB();
+  return new Promise((resolve,reject)=>{
+    const req = db.transaction([store],'readonly').objectStore(store).get(key);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function getByIndex(store, index, value){
+  const db = await getDB();
+  return new Promise((resolve,reject)=>{
+    const req = db.transaction([store],'readonly').objectStore(store).index(index).getAll(value);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function addOne(store, obj){
+  const db = await getDB();
+  return new Promise((resolve,reject)=>{
+    const req = db.transaction([store],'readwrite').objectStore(store).add(obj);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function putOne(store, obj){
+  const db = await getDB();
+  return new Promise((resolve,reject)=>{
+    const req = db.transaction([store],'readwrite').objectStore(store).put(obj);
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function deleteOne(store, key){
+  const db = await getDB();
+  return new Promise((resolve,reject)=>{
+    const req = db.transaction([store],'readwrite').objectStore(store).delete(key);
+    req.onsuccess=()=>resolve();
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function clearStore(store){
+  const db = await getDB();
+  return new Promise((resolve,reject)=>{
+    const req = db.transaction([store],'readwrite').objectStore(store).clear();
+    req.onsuccess=()=>resolve();
+    req.onerror=()=>reject(req.error);
+  });
+}
+
+/* ---------- domain helpers ---------- */
+async function computeDerived(ex){
+  const hist = await getByIndex('history', 'by_exercise', ex.id);
+  hist.sort((a,b)=> a.act_date < b.act_date ? 1 : (a.act_date > b.act_date ? -1 : 0));
+  const last = hist[0];
+  return Object.assign({}, ex, {
+    last_used: last ? last.act_date : null,
+    last_details: last ? last.details : '',
+    history_count: hist.length
+  });
+}
+async function allExercisesDerived(){
+  const list = await getAll('exercises');
+  return Promise.all(list.map(computeDerived));
+}
+async function isMarkedToday(exerciseId){
+  const m = await getOne('marked', exerciseId);
+  return !!(m && m.marked_on === todayStr());
+}
+async function toggleMark(exerciseId){
+  const existing = await getOne('marked', exerciseId);
+  if(existing && existing.marked_on === todayStr()){
+    await deleteOne('marked', exerciseId);
+    return false;
+  } else {
+    await putOne('marked', {exercise_id: exerciseId, marked_on: todayStr()});
+    return true;
+  }
+}
+async function markForToday(exerciseId){
+  await putOne('marked', {exercise_id: exerciseId, marked_on: todayStr()});
+}
+async function unmarkForToday(exerciseId){
+  await deleteOne('marked', exerciseId);
+}
+async function distinctBodyParts(){
+  const all = await getAll('exercises');
+  const seen = new Map(); // lowercase -> display casing (first seen)
+  for(const ex of all){
+    for(const field of ['general_parts','primary_target','secondary_target','tertiary_target']){
+      for(const part of (ex[field]||[])){
+        if(!part) continue;
+        const key = part.trim().toLowerCase();
+        if(!seen.has(key)) seen.set(key, part.trim());
+      }
+    }
+  }
+  return Array.from(seen.values()).sort((a,b)=>a.localeCompare(b));
+}
+async function deleteExerciseCascade(id){
+  const hist = await getByIndex('history', 'by_exercise', id);
+  for(const h of hist) await deleteOne('history', h.id);
+  await deleteOne('marked', id).catch(()=>{});
+  await deleteOne('exercises', id);
+}
+
+/* ---------- settings (weekly split template) ---------- */
+async function getSetting(key, fallback){
+  const row = await getOne('settings', key);
+  return row ? row.value : fallback;
+}
+async function setSetting(key, value){
+  await putOne('settings', {key, value});
+}
+function defaultSplitTemplate(){
+  return {
+    nonNegotiables: [],
+    days: [
+      {id: 1, label: 'Day A', bodyParts: []},
+      {id: 2, label: 'Day B', bodyParts: []},
+      {id: 3, label: 'Day C', bodyParts: []},
+    ],
+  };
+}
+
+/* ---------- exercise groups (display-only overlay, e.g. "Pull-up Progression") ---------- */
+function buildExerciseGroupMap(groups){
+  const map = new Map(); // exerciseId -> [groupName, ...]
+  for(const g of groups){
+    for(const exId of (g.exerciseIds||[])){
+      if(!map.has(exId)) map.set(exId, []);
+      map.get(exId).push(g.name);
+    }
+  }
+  return map;
+}
+function groupBadgesHtml(exerciseId, groupMap){
+  const names = groupMap.get(exerciseId);
+  if(!names || !names.length) return '';
+  return `<div class="tags">${names.map(n => `<span class="tag group">🔗 ${esc(n)}</span>`).join('')}</div>`;
+}
+
+
+function exerciseMatchesTag(ex, tag){
+  const t = (tag || '').trim().toLowerCase();
+  if(!t) return false;
+  const fields = ['general_parts','primary_target','secondary_target','tertiary_target'];
+  for(const f of fields){
+    if((ex[f]||[]).some(p => p.trim().toLowerCase().includes(t) || t.includes(p.trim().toLowerCase()))) return true;
+  }
+  if(ex.machine && ex.machine.toLowerCase().includes(t)) return true;
+  return false;
+}
+
+async function nonNegStatusToday(nonNegotiables){
+  const [todaysHistory, exercises] = await Promise.all([
+    getAll('history').then(h => h.filter(x => x.act_date === todayStr())),
+    getAll('exercises'),
+  ]);
+  const exMap = new Map(exercises.map(e => [e.id, e]));
+  const loggedExercises = todaysHistory.map(h => exMap.get(h.exercise_id)).filter(Boolean);
+
+  return nonNegotiables.map(nn => {
+    let done = false;
+    if(nn.type === 'exercise'){
+      done = loggedExercises.some(ex => ex.id === nn.exerciseId);
+    } else {
+      done = loggedExercises.some(ex => exerciseMatchesTag(ex, nn.tag));
+    }
+    return {...nn, done};
+  });
+}
+
+async function sectionSuggestions(bodyPart, machinePref){
+  const all = await allExercisesDerived();
+  const part = bodyPart.trim().toLowerCase();
+  const candidates = all.filter(ex => (ex.primary_target||[]).some(p => p.trim().toLowerCase() === part));
+  const pref = (machinePref || '').trim().toLowerCase();
+  const scored = candidates.map(ex => ({
+    ex,
+    machineMatch: pref && ex.machine ? ex.machine.toLowerCase().includes(pref) : false,
+  }));
+  scored.sort((a,b)=>{
+    if(a.machineMatch !== b.machineMatch) return a.machineMatch ? -1 : 1;
+    const la = a.ex.last_used || '0000-00-00'; // never used sorts first
+    const lb = b.ex.last_used || '0000-00-00';
+    return la < lb ? -1 : (la > lb ? 1 : 0);
+  });
+  return scored;
+}
+
+async function categorySuggestions(tag, maxShow){
+  maxShow = maxShow || 3;
+  const all = await allExercisesDerived();
+  const today = new Date(todayStr() + 'T00:00:00');
+  const candidates = all.filter(ex => exerciseMatchesTag(ex, tag));
+  const scored = candidates.map(ex => ({ex, novelty: noveltyScore(ex, today)}));
+  scored.sort((a,b)=> b.novelty - a.novelty);
+  return scored.slice(0, maxShow);
+}
+
+/* ---------- alternative-exercise algorithm ----------
+   Same weighted cosine-similarity approach as the FastAPI backend:
+   primary target counts 3x, secondary 2x, tertiary 1x, general 1x.
+*/
+const TARGET_WEIGHTS = {general_parts:1, primary_target:3, secondary_target:2, tertiary_target:1};
+
+function bodyPartVector(ex){
+  const vec = {};
+  for(const field in TARGET_WEIGHTS){
+    const w = TARGET_WEIGHTS[field];
+    for(const part of (ex[field]||[])){
+      if(!part) continue;
+      const k = part.trim().toLowerCase();
+      vec[k] = (vec[k]||0) + w;
+    }
+  }
+  return vec;
+}
+function cosineSimilarity(a, b){
+  const keysA = Object.keys(a);
+  if(!keysA.length || !Object.keys(b).length) return 0;
+  let dot = 0;
+  for(const k of keysA){ if(k in b) dot += a[k]*b[k]; }
+  const normA = Math.sqrt(keysA.reduce((s,k)=>s+a[k]*a[k],0));
+  const normB = Math.sqrt(Object.values(b).reduce((s,v)=>s+v*v,0));
+  if(!normA || !normB) return 0;
+  return dot/(normA*normB);
+}
+async function findAlternatives(target, opts){
+  opts = opts || {};
+  const limit = opts.limit || 5;
+  const minScore = opts.minScore != null ? opts.minScore : 0.15;
+  const avoidRaw = opts.avoidMachine !== undefined ? opts.avoidMachine : target.machine;
+  const avoid = avoidRaw ? avoidRaw.trim().toLowerCase() : null;
+
+  const all = await allExercisesDerived();
+  const targetVec = bodyPartVector(target);
+  const scored = [];
+  for(const ex of all){
+    if(ex.id === target.id) continue;
+    if(avoid && ex.machine && ex.machine.trim().toLowerCase() === avoid) continue;
+    const vec = bodyPartVector(ex);
+    const score = cosineSimilarity(targetVec, vec);
+    if(score < minScore) continue;
+    const shared = Object.keys(vec).filter(k => k in targetVec).sort();
+    scored.push({score, exercise: ex, shared});
+  }
+  scored.sort((a,b)=>{
+    if(b.score !== a.score) return b.score - a.score;
+    const la = a.exercise.last_used || '0000-00-00';
+    const lb = b.exercise.last_used || '0000-00-00';
+    return la < lb ? -1 : (la > lb ? 1 : 0); // never-used / staler first on ties
+  });
+  return scored.slice(0, limit);
+}
+
+/* ---------- plan generator ----------
+   Given a set of body parts to focus on, ranks exercises by:
+   - relevance: cosine similarity between the chosen parts and the exercise's
+     own weighted body-part vector (same math as findAlternatives)
+   - novelty: 0 for something logged today, ramping up to 1 for anything not
+     done in 30+ days, and 1 for exercises never logged at all — so the
+     generator naturally surfaces exercises you haven't been leaning on.
+   Composite score favors relevance but lets novelty break ties/nudge picks
+   toward variety rather than always returning your usual go-tos.
+*/
+function noveltyScore(ex, today){
+  if(!ex.last_used) return 1;
+  const days = (today - new Date(ex.last_used + 'T00:00:00')) / 86400000;
+  return Math.max(0, Math.min(1, days / 30));
+}
+async function generatePlan(selectedParts, limit){
+  if(!selectedParts || !selectedParts.length) return [];
+  const targetVec = {};
+  for(const p of selectedParts) targetVec[p.trim().toLowerCase()] = 1;
+
+  const all = await allExercisesDerived();
+  const today = new Date(todayStr() + 'T00:00:00');
+  const scored = [];
+  for(const ex of all){
+    const vec = bodyPartVector(ex);
+    const relevance = cosineSimilarity(targetVec, vec);
+    if(relevance <= 0) continue;
+    const novelty = noveltyScore(ex, today);
+    const composite = 0.7 * relevance + 0.3 * novelty;
+    scored.push({ex, relevance, novelty, composite});
+  }
+  scored.sort((a,b)=> b.composite - a.composite);
+  return scored.slice(0, limit || 5);
+}
+
+/* ---------- filtering (mirrors the FastAPI /view-exercises logic) ---------- */
+function filterExercises(list, f){
+  let out = list;
+  const days = Number(f.notUsedSinceDays) || 0;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  out = out.filter(ex => !ex.last_used || ex.last_used <= cutoffStr);
+
+  if(f.name) out = out.filter(ex => ex.name.toLowerCase().includes(f.name.toLowerCase()));
+  if(f.machine) out = out.filter(ex => ex.machine && ex.machine.toLowerCase().includes(f.machine.toLowerCase()));
+  const arrFilter = (field, val)=>{
+    out = out.filter(ex => (ex[field]||[]).some(p => p.toLowerCase().includes(val.toLowerCase())));
+  };
+  if(f.general_part) arrFilter('general_parts', f.general_part);
+  if(f.primary) arrFilter('primary_target', f.primary);
+  if(f.secondary) arrFilter('secondary_target', f.secondary);
+  if(f.tertiary) arrFilter('tertiary_target', f.tertiary);
+  return out;
+}
+
+/* ---------- router ---------- */
+function currentRoute(){ return location.hash.replace(/^#\/?/, ''); }
+
+function highlightTab(route){
+  const top = route.split('/')[0] || '';
+  document.querySelectorAll('.tab').forEach(a=>{
+    const r = a.dataset.route;
+    const isActive = (r === '' && route === '') ||
+                      (r === 'exercises/new' && route === 'exercises/new') ||
+                      (r === 'exercises' && top === 'exercises' && route !== 'exercises/new') ||
+                      (r === 'history' && top === 'history');
+    a.classList.toggle('active', isActive);
+  });
+}
+
+async function render(){
+  const route = currentRoute();
+  highlightTab(route);
+  const app = document.getElementById('app');
+  const parts = route.split('/').filter(Boolean);
+  try{
+    if(parts.length === 0) return renderHome(app);
+    if(parts[0] === 'exercises'){
+      if(parts.length === 1) return renderExerciseList(app);
+      if(parts[1] === 'new') return renderExerciseForm(app, null);
+      if(parts[2] === 'edit') return renderExerciseForm(app, Number(parts[1]));
+    }
+    if(parts[0] === 'history'){
+      if(parts.length === 1) return renderHistoryList(app);
+      if(parts[1] === 'new') return renderHistoryForm(app, {exerciseId: Number(parts[2])});
+      if(parts[2] === 'edit') return renderHistoryForm(app, {historyId: Number(parts[1])});
+    }
+    if(parts[0] === 'backup') return renderBackup(app);
+    if(parts[0] === 'plan' && parts[1] === 'generate') return renderPlanGenerator(app);
+    if(parts[0] === 'split' && parts.length === 1) return renderSplit(app);
+    if(parts[0] === 'split' && parts[1] === 'edit') return renderSplitEdit(app);
+    if(parts[0] === 'groups') return renderGroups(app);
+    app.innerHTML = '<div class="page"><p class="empty">Page not found.</p></div>';
+  }catch(err){
+    console.error(err);
+    app.innerHTML = `<div class="page"><p class="empty">Something went wrong loading this page: ${esc(err.message)}</p></div>`;
+  }
+}
+window.addEventListener('hashchange', render);
+async function maybeSeed(){
+  const existing = await getAll('exercises');
+  if(existing.length) return; // already has data — never overwrite
+  if(typeof SEED_DATA === 'undefined' || !SEED_DATA || !Array.isArray(SEED_DATA.exercises) || !SEED_DATA.exercises.length) return;
+  for(const ex of SEED_DATA.exercises) await putOne('exercises', ex);
+  for(const h of (SEED_DATA.history||[])) await putOne('history', h);
+  for(const m of (SEED_DATA.marked||[])) await putOne('marked', m);
+  toast(`Loaded ${SEED_DATA.exercises.length} exercises from your backup`);
+}
+
+window.addEventListener('DOMContentLoaded', async ()=>{
+  document.getElementById('todayChip').textContent = fmtDate(todayStr());
+
+  const menuBtn = document.getElementById('menuToggle');
+  const menuPanel = document.getElementById('topMenu');
+  menuBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    menuPanel.classList.toggle('open');
+  });
+  document.addEventListener('click', (e)=>{
+    if(menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && e.target !== menuBtn){
+      menuPanel.classList.remove('open');
+    }
+  });
+  window.addEventListener('hashchange', ()=> menuPanel.classList.remove('open'));
+
+  await maybeSeed();
+  render();
+});
+
+/* ---------- HOME ---------- */
+let _homeGroupBy = 'machine'; // 'machine' | 'part'
+
+function groupTodayExercises(list, groupBy){
+  const groups = {};
+  if(groupBy === 'part'){
+    for(const ex of list){
+      const parts = (ex.primary_target && ex.primary_target.length) ? ex.primary_target : ['Uncategorized'];
+      for(const p of parts){
+        const key = p || 'Uncategorized';
+        (groups[key] = groups[key] || []).push(ex);
+      }
+    }
+  } else {
+    for(const ex of list){
+      const key = ex.machine || 'Uncategorized';
+      (groups[key] = groups[key] || []).push(ex);
+    }
+  }
+  return groups;
+}
+
+function targetTagsHtml(ex){
+  const hasAny = (ex.primary_target||[]).length || (ex.secondary_target||[]).length || (ex.tertiary_target||[]).length;
+  if(!hasAny) return '';
+  return `
+    <div class="tags">
+      ${(ex.primary_target||[]).map(p => `<span class="tag primary">${esc(p)}</span>`).join('')}
+      ${(ex.secondary_target||[]).map(p => `<span class="tag">${esc(p)}</span>`).join('')}
+      ${(ex.tertiary_target||[]).map(p => `<span class="tag">${esc(p)}</span>`).join('')}
+    </div>
+  `;
+}
+
+async function renderHome(app){
+  const derived = await allExercisesDerived();
+  const marked = (await getAll('marked')).filter(m => m.marked_on === todayStr());
+  const markedIds = new Set(marked.map(m => m.exercise_id));
+  const todays = derived.filter(ex => markedIds.has(ex.id));
+  const exerciseGroups = await getAll('groups');
+  const groupMap = buildExerciseGroupMap(exerciseGroups);
+
+  const groups = groupTodayExercises(todays, _homeGroupBy);
+
+  const groupHtml = Object.keys(groups).length ? Object.keys(groups).sort().map(groupKey => `
+    <h3 class="group-title">${esc(groupKey)}</h3>
+    <ul class="today-list">
+      ${groups[groupKey].map(ex => `
+        <li class="today-item" data-id="${ex.id}">
+          <div class="today-item-head">
+            <div>
+              <strong>${esc(ex.name)}</strong>
+              <span class="meta">${ex.last_used ? 'Last logged ' + esc(fmtDate(ex.last_used)) : 'Never logged'}</span>
+              ${ex.last_details ? `<div class="meta detail-block">${esc(ex.last_details)}</div>` : ''}
+            </div>
+            <div class="row-actions">
+              <a class="btn small" href="#/history/new/${ex.id}">Log set</a>
+              <button class="btn small ghost" data-unmark="${ex.id}">Unmark</button>
+            </div>
+          </div>
+          ${groupBadgesHtml(ex.id, groupMap)}
+          ${targetTagsHtml(ex)}
+          <details class="alt">
+            <summary>Can't get this machine? Find alternative</summary>
+            <div class="alt-body" data-alt-body="${ex.id}"><span class="meta">Loading…</span></div>
+          </details>
+        </li>`).join('')}
+    </ul>
+  `).join('') : `<p class="empty">Nothing marked for today yet. Head to <a href="#/exercises">Exercises</a> and tap "Mark for today", or <a href="#/plan/generate">generate a plan</a> automatically.</p>`;
+
+  app.innerHTML = `
+    <div class="page">
+      <h1>Today's Plan</h1>
+
+      ${todays.length ? `
+        <div class="toggle-group">
+          <button class="btn ${_homeGroupBy==='machine' ? '' : 'ghost'}" data-group-by="machine">By machine</button>
+          <button class="btn ${_homeGroupBy==='part' ? '' : 'ghost'}" data-group-by="part">By body part</button>
+        </div>
+      ` : ''}
+      ${groupHtml}
+    </div>
+  `;
+  app.querySelectorAll('[data-group-by]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      _homeGroupBy = btn.dataset.groupBy;
+      renderHome(app);
+    });
+  });
+  app.querySelectorAll('[data-unmark]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      await unmarkForToday(Number(btn.dataset.unmark));
+      toast('Removed from today');
+      renderHome(app);
+    });
+  });
+  app.querySelectorAll('details.alt').forEach(det=>{
+    det.addEventListener('toggle', async ()=>{
+      if(!det.open) return;
+      const id = Number(det.closest('[data-id]').dataset.id);
+      const body = det.querySelector('[data-alt-body]');
+      const target = todays.find(e => e.id === id) || await computeDerived(await getOne('exercises', id));
+      const results = await findAlternatives(target, {limit:5});
+      if(!results.length){
+        body.innerHTML = `<p class="meta">No close matches found in your bank (excluding "${esc(target.machine||'')}").</p>`;
+        return;
+      }
+      body.innerHTML = results.map(r=>`
+        <div class="alt-row">
+          <div class="plate">${r.score >= 0.995 ? '100' : Math.round(r.score*100)}%</div>
+          <div class="alt-info">
+            <strong>${esc(r.exercise.name)}</strong>
+            <span class="meta">${esc(r.exercise.machine||'No machine')} · shares ${esc(r.shared.slice(0,3).join(', ') || '—')}</span>
+          </div>
+          <button class="btn small" data-swap="${r.exercise.id}" data-swap-out="${id}">Swap</button>
+        </div>
+      `).join('');
+      body.querySelectorAll('[data-swap]').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          await unmarkForToday(Number(b.dataset.swapOut));
+          await markForToday(Number(b.dataset.swap));
+          toast('Swapped in for today');
+          renderHome(app);
+        });
+      });
+    });
+  });
+}
+
+/* ---------- EXERCISE LIST ---------- */
+let _exerciseCache = [];
+let _exerciseFilters = {name:'', machine:'', general_part:'', primary:'', secondary:'', tertiary:'', notUsedSinceDays:0};
+
+function exerciseRowHtml(ex, marked, groupMap){
+  const tagRow = (label, arr, cls)=> (arr && arr.length)
+    ? `<div class="tags">${arr.map(p=>`<span class="tag ${cls||''}">${esc(p)}</span>`).join('')}</div>` : '';
+  return `
+    <li class="ex-item" data-id="${ex.id}">
+      <div>
+        <strong>${esc(ex.name)}</strong>
+        <span class="meta">${esc(ex.machine || 'No machine set')} · ${ex.last_used ? 'Last: ' + esc(fmtDate(ex.last_used)) : 'Never logged'}</span>
+      </div>
+      ${groupBadgesHtml(ex.id, groupMap)}
+      ${tagRow(null, ex.primary_target, 'primary')}
+      ${tagRow(null, [...(ex.secondary_target||[]), ...(ex.tertiary_target||[])])}
+      <div class="row-actions" style="margin-top:10px;flex-wrap:wrap;">
+        <button class="btn small ${marked ? 'teal' : ''}" data-mark="${ex.id}">${marked ? '✓ Marked today' : 'Mark for today'}</button>
+        <a class="btn small ghost" href="#/history/new/${ex.id}">Log set</a>
+        <a class="btn small ghost" href="#/exercises/${ex.id}/edit">Edit</a>
+        <button class="btn small danger" data-delete="${ex.id}">Delete</button>
+      </div>
+    </li>
+  `;
+}
+
+async function renderExerciseResults(){
+  const container = document.getElementById('exerciseResults');
+  if(!container) return;
+  const filtered = filterExercises(_exerciseCache, _exerciseFilters);
+  if(!filtered.length){
+    container.innerHTML = `<p class="empty">No exercises match those filters.</p>`;
+    return;
+  }
+  const [markedRows, groups] = await Promise.all([getAll('marked'), getAll('groups')]);
+  const markedToday = new Set(markedRows.filter(m=>m.marked_on===todayStr()).map(m=>m.exercise_id));
+  const groupMap = buildExerciseGroupMap(groups);
+  container.innerHTML = `<ul class="ex-list">${filtered.map(ex=>exerciseRowHtml(ex, markedToday.has(ex.id), groupMap)).join('')}</ul>`;
+  wireExerciseRowEvents(container);
+}
+
+function wireExerciseRowEvents(container){
+  container.querySelectorAll('[data-mark]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = Number(btn.dataset.mark);
+      const nowMarked = await toggleMark(id);
+      toast(nowMarked ? 'Marked for today' : 'Unmarked');
+      renderExerciseResults();
+    });
+  });
+  container.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = Number(btn.dataset.delete);
+      if(!(await appConfirm('Delete this exercise and all its logged history? This can\'t be undone.', 'Delete'))) return;
+      await deleteExerciseCascade(id);
+      _exerciseCache = await allExercisesDerived();
+      toast('Exercise deleted');
+      renderExerciseResults();
+    });
+  });
+}
+
+async function renderExerciseList(app){
+  _exerciseCache = await allExercisesDerived();
+  app.innerHTML = `
+    <div class="page">
+      <h1>Exercise Bank</h1>
+      <div class="filters">
+        <div class="full">
+          <div class="filter-label">Name</div>
+          <input type="search" id="f_name" placeholder="Search by name">
+        </div>
+        <div>
+          <div class="filter-label">Machine</div>
+          <input type="text" id="f_machine" placeholder="e.g. Cable">
+        </div>
+        <div>
+          <div class="filter-label">Not used in (days)</div>
+          <input type="number" id="f_days" min="0" value="0">
+        </div>
+        <div>
+          <div class="filter-label">General part</div>
+          <input type="text" id="f_general" placeholder="e.g. Legs">
+        </div>
+        <div>
+          <div class="filter-label">Primary target</div>
+          <input type="text" id="f_primary" placeholder="e.g. Quads">
+        </div>
+        <div>
+          <div class="filter-label">Secondary</div>
+          <input type="text" id="f_secondary" placeholder="e.g. Glutes">
+        </div>
+        <div>
+          <div class="filter-label">Tertiary</div>
+          <input type="text" id="f_tertiary" placeholder="e.g. Core">
+        </div>
+      </div>
+      <div id="exerciseResults"></div>
+    </div>
+  `;
+  const bindings = [
+    ['f_name','name'], ['f_machine','machine'], ['f_days','notUsedSinceDays'],
+    ['f_general','general_part'], ['f_primary','primary'], ['f_secondary','secondary'], ['f_tertiary','tertiary']
+  ];
+  for(const [elId, key] of bindings){
+    const el = document.getElementById(elId);
+    el.value = _exerciseFilters[key] || (key==='notUsedSinceDays' ? 0 : '');
+    el.addEventListener('input', ()=>{
+      _exerciseFilters[key] = el.value;
+      renderExerciseResults();
+    });
+  }
+  renderExerciseResults();
+}
+
+/* ---------- EXERCISE FORM (new / edit) ---------- */
+const GENERAL_PART_OPTIONS = ['upper body', 'lower body', 'core', 'cardio', 'mobility'];
+const MACHINE_OPTIONS = ['machine', 'barbell', 'dumbbell', 'smith machine', 'kettlebell', 'bodyweight', 'cable', 'bike', 'treadmill', 'stairmaster'];
+
+function checkDropdownHtml(id, options, selectedValues){
+  const selectedLower = new Set((selectedValues||[]).map(v=>v.trim().toLowerCase()));
+  return `
+    <div class="dropdown">
+      <button type="button" class="btn small ghost" data-dropdown-toggle="${id}">Select ▾</button>
+      <div id="${id}" class="dropdown-content">
+        ${options.map(opt => `
+          <label class="dropdown-check">
+            <input type="checkbox" value="${esc(opt)}" data-dropdown-group="${id}" ${selectedLower.has(opt) ? 'checked' : ''}>
+            ${esc(opt)}
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function wireDropdown(app, dropdownId, textInputId){
+  const btn = app.querySelector(`[data-dropdown-toggle="${dropdownId}"]`);
+  const panel = document.getElementById(dropdownId);
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    document.querySelectorAll('.dropdown-content.open').forEach(p => { if(p !== panel) p.classList.remove('open'); });
+    panel.classList.toggle('open');
+  });
+  panel.querySelectorAll(`input[data-dropdown-group="${dropdownId}"]`).forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const checked = Array.from(panel.querySelectorAll(`input[data-dropdown-group="${dropdownId}"]:checked`)).map(c=>c.value);
+      document.getElementById(textInputId).value = checked.join(', ');
+    });
+  });
+  document.addEventListener('click', (ev)=>{
+    if(!panel.contains(ev.target) && ev.target !== btn) panel.classList.remove('open');
+  }, {once:false});
+}
+
+async function renderExerciseForm(app, id){
+  const isEdit = id !== null;
+  const existing = isEdit ? await getOne('exercises', id) : null;
+  if(isEdit && !existing){
+    app.innerHTML = `<div class="page"><p class="empty">Exercise not found.</p></div>`;
+    return;
+  }
+  const v = existing || {name:'',hyperlink:'',machine:'',general_parts:[],primary_target:[],secondary_target:[],tertiary_target:[]};
+
+  const newExerciseFormHtml = `
+    <form id="exForm">
+      <div class="field">
+        <label>Name *</label>
+        <input type="text" id="ex_name" value="${esc(v.name)}" required>
+      </div>
+      <div class="field">
+        <label>Machine / equipment</label>
+        ${checkDropdownHtml('machineDropdown', MACHINE_OPTIONS, v.machine ? [v.machine] : [])}
+        <input type="text" id="ex_machine" value="${esc(v.machine)}" placeholder="e.g. cable, dumbbell — or type your own">
+      </div>
+      <div class="field">
+        <label>Link (optional)</label>
+        <input type="text" id="ex_link" value="${esc(v.hyperlink)}" placeholder="https://...">
+      </div>
+      <div class="field">
+        <label>General body parts</label>
+        ${checkDropdownHtml('generalPartsDropdown', GENERAL_PART_OPTIONS, v.general_parts)}
+        <input type="text" id="ex_general" value="${esc((v.general_parts||[]).join(', '))}" placeholder="Legs, Push">
+        <div class="hint">Pick from the list or type your own, comma-separated</div>
+      </div>
+      <div class="field">
+        <label>Primary target</label>
+        <input type="text" id="ex_primary" value="${esc((v.primary_target||[]).join(', '))}" placeholder="Quadriceps">
+      </div>
+      <div class="field">
+        <label>Secondary target</label>
+        <input type="text" id="ex_secondary" value="${esc((v.secondary_target||[]).join(', '))}" placeholder="Glutes">
+      </div>
+      <div class="field">
+        <label>Tertiary target</label>
+        <input type="text" id="ex_tertiary" value="${esc((v.tertiary_target||[]).join(', '))}" placeholder="Core, Calves">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn block">${isEdit ? 'Save changes' : 'Add exercise'}</button>
+      </div>
+    </form>
+  `;
+
+  const logExistingHtml = `
+    <div class="field">
+      <label>Exercise</label>
+      <select id="logExerciseSelect">
+        ${(await getAll('exercises')).sort((a,b)=>a.name.localeCompare(b.name)).map(ex=>`<option value="${ex.id}">${esc(ex.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="logDate" value="${todayStr()}">
+    </div>
+    <div class="field">
+      <label>Details</label>
+      <textarea id="logDetails" placeholder="e.g. 3x10 @ 90lb"></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn block" id="logSubmitBtn">Save log</button>
+    </div>
+  `;
+
+  app.innerHTML = `
+    <div class="page">
+      <h1>${isEdit ? 'Edit Exercise' : 'Add'}</h1>
+      ${isEdit ? '' : `
+        <div class="toggle-group">
+          <button class="btn" id="tabNewBtn">New exercise</button>
+          <button class="btn ghost" id="tabLogBtn">Log existing</button>
+        </div>
+      `}
+      <div id="newExercisePanel">${newExerciseFormHtml}</div>
+      ${isEdit ? '' : `<div id="logExistingPanel" style="display:none;">${logExistingHtml}</div>`}
+    </div>
+  `;
+
+  wireDropdown(app, 'machineDropdown', 'ex_machine');
+  wireDropdown(app, 'generalPartsDropdown', 'ex_general');
+
+  document.getElementById('exForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const name = document.getElementById('ex_name').value.trim();
+    if(!name){ toast('Name is required'); return; }
+    const payload = {
+      name,
+      machine: document.getElementById('ex_machine').value.trim(),
+      hyperlink: document.getElementById('ex_link').value.trim(),
+      general_parts: parseList(document.getElementById('ex_general').value),
+      primary_target: parseList(document.getElementById('ex_primary').value),
+      secondary_target: parseList(document.getElementById('ex_secondary').value),
+      tertiary_target: parseList(document.getElementById('ex_tertiary').value),
+    };
+    if(isEdit){
+      payload.id = id;
+      await putOne('exercises', payload);
+      toast('Exercise updated');
+    } else {
+      await addOne('exercises', payload);
+      toast('Exercise added');
+    }
+    location.hash = '#/exercises';
+  });
+
+  if(!isEdit){
+    const tabNewBtn = document.getElementById('tabNewBtn');
+    const tabLogBtn = document.getElementById('tabLogBtn');
+    const newPanel = document.getElementById('newExercisePanel');
+    const logPanel = document.getElementById('logExistingPanel');
+    tabNewBtn.addEventListener('click', ()=>{
+      newPanel.style.display = '';
+      logPanel.style.display = 'none';
+      tabNewBtn.classList.remove('ghost');
+      tabLogBtn.classList.add('ghost');
+    });
+    tabLogBtn.addEventListener('click', ()=>{
+      newPanel.style.display = 'none';
+      logPanel.style.display = '';
+      tabLogBtn.classList.remove('ghost');
+      tabNewBtn.classList.add('ghost');
+    });
+
+    const logSelect = document.getElementById('logExerciseSelect');
+    const logDetails = document.getElementById('logDetails');
+    async function prefillDetails(){
+      const exId = Number(logSelect.value);
+      if(!exId) return;
+      const hist = await getByIndex('history', 'by_exercise', exId);
+      hist.sort((a,b)=> a.act_date < b.act_date ? 1 : -1);
+      logDetails.value = hist[0] ? hist[0].details : '';
+    }
+    if(logSelect.options.length){
+      logSelect.addEventListener('change', prefillDetails);
+      prefillDetails();
+    }
+
+    document.getElementById('logSubmitBtn').addEventListener('click', async ()=>{
+      const exId = Number(logSelect.value);
+      if(!exId){ toast('Add an exercise first'); return; }
+      await addOne('history', {
+        exercise_id: exId,
+        act_date: document.getElementById('logDate').value || todayStr(),
+        details: logDetails.value,
+      });
+      toast('Set logged');
+      location.hash = '#/history';
+    });
+  }
+}
+
+/* ---------- PLAN GENERATOR ---------- */
+let _planSelectedParts = new Set();
+let _planCount = 5;
+let _planResults = [];
+
+async function renderPlanGenerator(app){
+  const parts = await distinctBodyParts();
+
+  app.innerHTML = `
+    <div class="page">
+      <h1>Generate a Plan</h1>
+      <p class="meta" style="line-height:1.5;margin-bottom:16px;">
+        Pick the body parts you want to hit. Results favor exercises that match those parts
+        <strong>and</strong> that you haven't done in a while — so you're not just handed the
+        same old routine.
+      </p>
+      <div class="field">
+        <label>Focus areas</label>
+        <div class="tags" id="planParts" style="margin-top:2px;">
+          ${parts.map(p => `<span class="tag pick" data-part="${esc(p)}" style="cursor:pointer;">${esc(p)}</span>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label>How many exercises</label>
+        <input type="number" id="planCount" min="1" max="20" value="${_planCount}">
+      </div>
+      <div class="form-actions">
+        <button class="btn block" id="planGenerateBtn">Generate</button>
+      </div>
+      <div id="planResults" style="margin-top:18px;"></div>
+    </div>
+  `;
+
+  function refreshPartStyles(){
+    app.querySelectorAll('#planParts .tag').forEach(el=>{
+      const isSelected = _planSelectedParts.has(el.dataset.part);
+      el.classList.toggle('primary', isSelected);
+      el.style.background = isSelected ? 'var(--accent)' : '';
+      el.style.color = isSelected ? 'var(--accent-ink)' : '';
+      el.style.borderColor = isSelected ? 'var(--accent)' : '';
+    });
+  }
+  refreshPartStyles();
+
+  app.querySelectorAll('#planParts .tag').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const p = el.dataset.part;
+      if(_planSelectedParts.has(p)) _planSelectedParts.delete(p);
+      else _planSelectedParts.add(p);
+      refreshPartStyles();
+    });
+  });
+
+  document.getElementById('planCount').addEventListener('input', (e)=>{
+    _planCount = Number(e.target.value) || 5;
+  });
+
+  document.getElementById('planGenerateBtn').addEventListener('click', async ()=>{
+    if(!_planSelectedParts.size){
+      toast('Pick at least one focus area');
+      return;
+    }
+    const resultsEl = document.getElementById('planResults');
+    resultsEl.innerHTML = `<p class="meta">Generating…</p>`;
+    _planResults = await generatePlan(Array.from(_planSelectedParts), _planCount);
+    renderPlanResults();
+  });
+
+  function renderPlanResults(){
+    const resultsEl = document.getElementById('planResults');
+    if(!_planResults.length){
+      resultsEl.innerHTML = `<p class="empty">No exercises in your bank match those focus areas.</p>`;
+      return;
+    }
+    resultsEl.innerHTML = `
+      <div class="form-actions" style="margin-bottom:4px;">
+        <button class="btn teal block" id="planAddAll">Add all ${_planResults.length} to today's plan</button>
+      </div>
+      ${_planResults.map(r => `
+        <div class="alt-row">
+          <div class="plate">${r.relevance >= 0.995 ? '100' : Math.round(r.relevance*100)}%</div>
+          <div class="alt-info">
+            <strong>${esc(r.ex.name)}</strong>
+            <span class="meta">${esc(r.ex.machine||'No machine')} · ${r.ex.last_used ? 'last logged ' + esc(fmtDate(r.ex.last_used)) : 'never logged'}</span>
+          </div>
+          <button class="btn small" data-plan-add="${r.ex.id}">Add</button>
+        </div>
+      `).join('')}
+    `;
+    document.getElementById('planAddAll').addEventListener('click', async ()=>{
+      for(const r of _planResults) await markForToday(r.ex.id);
+      toast('Added to today\'s plan');
+      location.hash = '#/';
+    });
+    resultsEl.querySelectorAll('[data-plan-add]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        await markForToday(Number(btn.dataset.planAdd));
+        toast('Added to today');
+        btn.textContent = 'Added ✓';
+        btn.disabled = true;
+      });
+    });
+  }
+}
+
+/* ---------- MY SPLIT (weekly non-negotiables + day-focus template) ---------- */
+let _splitMachinePrefs = {}; // dayId -> free-text machine preference, in-memory only
+
+async function renderSplit(app){
+  const template = await getSetting('weekly_template', null);
+
+  if(!template || (!template.nonNegotiables.length && !template.days.some(d => d.bodyParts.length))){
+    app.innerHTML = `
+      <div class="page">
+        <h1>My Split</h1>
+        <p class="empty">
+          You haven't set up your split yet. Define your non-negotiables (exercises that must
+          happen every gym day) and your day-focuses (which body parts each session targets).
+        </p>
+        <div class="form-actions">
+          <a class="btn block" href="#/split/edit">Set up my split</a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const nnStatus = await nonNegStatusToday(template.nonNegotiables);
+  const doneCount = nnStatus.filter(n => n.done).length;
+
+  const nnHtml = nnStatus.length ? nnStatus.map(nn => `
+    <div class="check-item" data-nn-id="${nn.id}">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+        <div class="check-dot ${nn.done ? 'done' : ''}">${nn.done ? '✓' : ''}</div>
+        <div style="min-width:0;">
+          <strong style="font-size:13.5px;">${esc(nn.label)}</strong>
+          <span class="meta">${nn.type === 'category' ? 'Category: ' + esc(nn.tag) : 'Specific exercise'}</span>
+        </div>
+      </div>
+      ${nn.done ? '' : (nn.type === 'exercise'
+          ? `<button class="btn small" data-nn-add="${nn.exerciseId}">Add</button>`
+          : `<button class="btn small" data-nn-suggest="${nn.id}">Suggest</button>`)}
+    </div>
+    ${nn.type === 'category' && !nn.done ? `<div data-nn-suggestions="${nn.id}"></div>` : ''}
+  `).join('') : `<p class="meta">No non-negotiables set yet.</p>`;
+
+  const dayCardsHtml = template.days.map(day => `
+    <div class="day-card" data-day-id="${day.id}">
+      <h3>${esc(day.label)}</h3>
+      <div class="parts-line">${day.bodyParts.length ? esc(day.bodyParts.join(', ')) : 'No body parts set for this day'}</div>
+      ${day.bodyParts.length ? `
+        <div class="field" style="margin-bottom:8px;">
+          <input type="text" class="mono" placeholder="Equipment today? e.g. cable, dumbbell" data-machine-input="${day.id}" value="${esc(_splitMachinePrefs[day.id]||'')}">
+        </div>
+        <button class="btn small teal" data-get-suggestions="${day.id}">Get suggestions</button>
+        <div data-day-suggestions="${day.id}" style="margin-top:8px;"></div>
+      ` : ''}
+    </div>
+  `).join('');
+
+  app.innerHTML = `
+    <div class="page">
+      <h1>My Split</h1>
+      <div class="row-actions" style="margin-bottom:14px;">
+        <a class="btn small ghost" href="#/split/edit">Edit split</a>
+      </div>
+
+      <h2>Non-negotiables</h2>
+      <span class="progress-pill ${doneCount === nnStatus.length && nnStatus.length ? 'complete' : ''}">
+        Today: ${doneCount}/${nnStatus.length} done
+      </span>
+      <div class="card">${nnHtml}</div>
+
+      <h2 style="margin-top:22px;">Pick today's session</h2>
+      ${dayCardsHtml}
+    </div>
+  `;
+
+  app.querySelectorAll('[data-nn-add]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      await markForToday(Number(btn.dataset.nnAdd));
+      toast('Added to today');
+      renderSplit(app);
+    });
+  });
+  app.querySelectorAll('[data-nn-suggest]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const nn = template.nonNegotiables.find(n => n.id === btn.dataset.nnSuggest);
+      const box = app.querySelector(`[data-nn-suggestions="${btn.dataset.nnSuggest}"]`);
+      const results = await categorySuggestions(nn.tag, 3);
+      if(!results.length){
+        box.innerHTML = `<p class="meta" style="padding:6px 0 0 30px;">No exercises match "${esc(nn.tag)}" yet — add some in Exercises.</p>`;
+        return;
+      }
+      box.innerHTML = results.map(r => `
+        <div class="alt-row">
+          <div class="plate">${r.ex.last_used ? Math.min(99, Math.round((new Date(todayStr()+'T00:00:00') - new Date(r.ex.last_used+'T00:00:00'))/86400000)) + 'd' : 'NEW'}</div>
+          <div class="alt-info">
+            <strong>${esc(r.ex.name)}</strong>
+            <span class="meta">${esc(r.ex.machine||'No machine')}</span>
+          </div>
+          <button class="btn small" data-add-cat="${r.ex.id}">Add</button>
+        </div>
+      `).join('');
+      box.querySelectorAll('[data-add-cat]').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          await markForToday(Number(b.dataset.addCat));
+          toast('Added to today');
+          renderSplit(app);
+        });
+      });
+    });
+  });
+  app.querySelectorAll('[data-machine-input]').forEach(input=>{
+    input.addEventListener('input', ()=>{
+      _splitMachinePrefs[input.dataset.machineInput] = input.value;
+    });
+  });
+  app.querySelectorAll('[data-get-suggestions]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const dayId = btn.dataset.getSuggestions;
+      const day = template.days.find(d => String(d.id) === String(dayId));
+      const box = app.querySelector(`[data-day-suggestions="${dayId}"]`);
+      const machinePref = _splitMachinePrefs[dayId] || '';
+      box.innerHTML = `<p class="meta">Loading…</p>`;
+      const sections = await Promise.all(day.bodyParts.map(async part => ({
+        part, results: await sectionSuggestions(part, machinePref),
+      })));
+      box.innerHTML = sections.map(sec => `
+        <div class="section-title">${esc(sec.part)}</div>
+        ${sec.results.length ? sec.results.map(r => `
+          <div class="alt-row">
+            <div class="plate">${r.machineMatch ? '★' : (r.ex.last_used ? Math.min(99, Math.round((new Date(todayStr()+'T00:00:00') - new Date(r.ex.last_used+'T00:00:00'))/86400000)) + 'd' : 'NEW')}</div>
+            <div class="alt-info">
+              <strong>${esc(r.ex.name)}</strong>
+              <span class="meta">${esc(r.ex.machine||'No machine')}${r.machineMatch ? ' · matches your pick' : ''}</span>
+            </div>
+            <button class="btn small" data-add-section="${r.ex.id}">Add</button>
+          </div>
+        `).join('') : `<p class="meta">No exercises primarily target ${esc(sec.part)} yet.</p>`}
+      `).join('');
+      box.querySelectorAll('[data-add-section]').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          await markForToday(Number(b.dataset.addSection));
+          toast('Added to today');
+        });
+      });
+    });
+  });
+}
+
+/* ---------- EDIT SPLIT ---------- */
+let _splitDraft = null;
+
+async function renderSplitEdit(app){
+  if(!_splitDraft){
+    const saved = await getSetting('weekly_template', null);
+    _splitDraft = saved ? JSON.parse(JSON.stringify(saved)) : defaultSplitTemplate();
+  }
+  const exercises = await getAll('exercises');
+  const bodyParts = await distinctBodyParts();
+
+  const nnRowHtml = (nn) => `
+    <div class="split-edit-day" data-nn-row="${nn.id}">
+      <div class="row-actions" style="justify-content:space-between;margin-bottom:8px;">
+        <strong style="font-size:13px;">${esc(nn.label || '(unnamed)')}</strong>
+        <button class="btn small danger" data-remove-nn="${nn.id}">Remove</button>
+      </div>
+      <span class="meta">${nn.type === 'exercise' ? 'Specific exercise' : 'Category: ' + esc(nn.tag)}</span>
+    </div>
+  `;
+
+  app.innerHTML = `
+    <div class="page">
+      <h1>Edit My Split</h1>
+
+      <h2>Non-negotiables</h2>
+      <div id="nnList">${_splitDraft.nonNegotiables.map(nnRowHtml).join('') || '<p class="meta">None yet.</p>'}</div>
+
+      <div class="card" style="margin-top:10px;">
+        <div class="field">
+          <label>Add non-negotiable</label>
+          <select id="nnType">
+            <option value="exercise">Specific exercise</option>
+            <option value="category">Category (tag/equipment match)</option>
+          </select>
+        </div>
+        <div class="field" id="nnExerciseField">
+          <label>Exercise</label>
+          <select id="nnExerciseSelect">
+            ${exercises.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(ex=>`<option value="${ex.id}">${esc(ex.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field" id="nnCategoryField" style="display:none;">
+          <label>Tag (matches any of general/primary/secondary/tertiary/machine)</label>
+          <input type="text" id="nnCategoryInput" placeholder="e.g. cardio">
+        </div>
+        <div class="field">
+          <label>Label</label>
+          <input type="text" id="nnLabel" placeholder="e.g. Dead hangs">
+        </div>
+        <button class="btn small" id="addNnBtn">Add non-negotiable</button>
+      </div>
+
+      <h2 style="margin-top:22px;">Day focuses</h2>
+      <div id="dayList">
+        ${_splitDraft.days.map(day => `
+          <div class="split-edit-day" data-day-row="${day.id}">
+            <div class="field">
+              <label>Label</label>
+              <input type="text" data-day-label="${day.id}" value="${esc(day.label)}">
+            </div>
+            <div class="field">
+              <label>Body parts (primary target)</label>
+              <div class="tags day-parts" data-day-parts="${day.id}">
+                ${bodyParts.map(p => `<span class="tag pick" data-part="${esc(p)}" style="cursor:pointer;${day.bodyParts.includes(p) ? 'background:var(--accent);color:var(--accent-ink);border-color:var(--accent);' : ''}">${esc(p)}</span>`).join('')}
+              </div>
+            </div>
+            <button class="btn small danger" data-remove-day="${day.id}">Remove day</button>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn small ghost" id="addDayBtn">+ Add day</button>
+
+      <div class="form-actions" style="margin-top:20px;">
+        <button class="btn block" id="saveSplitBtn">Save split</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('nnType').addEventListener('change', (e)=>{
+    document.getElementById('nnExerciseField').style.display = e.target.value === 'exercise' ? '' : 'none';
+    document.getElementById('nnCategoryField').style.display = e.target.value === 'category' ? '' : 'none';
+  });
+
+  document.getElementById('addNnBtn').addEventListener('click', ()=>{
+    const type = document.getElementById('nnType').value;
+    const label = document.getElementById('nnLabel').value.trim();
+    if(!label){ toast('Give it a label'); return; }
+    const id = 'nn_' + Date.now();
+    if(type === 'exercise'){
+      const exId = Number(document.getElementById('nnExerciseSelect').value);
+      _splitDraft.nonNegotiables.push({id, type:'exercise', exerciseId: exId, label});
+    } else {
+      const tag = document.getElementById('nnCategoryInput').value.trim();
+      if(!tag){ toast('Enter a tag to match on'); return; }
+      _splitDraft.nonNegotiables.push({id, type:'category', tag, label});
+    }
+    renderSplitEdit(app);
+  });
+
+  app.querySelectorAll('[data-remove-nn]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      _splitDraft.nonNegotiables = _splitDraft.nonNegotiables.filter(n => n.id !== btn.dataset.removeNn);
+      renderSplitEdit(app);
+    });
+  });
+
+  app.querySelectorAll('[data-day-label]').forEach(input=>{
+    input.addEventListener('input', ()=>{
+      const day = _splitDraft.days.find(d => String(d.id) === input.dataset.dayLabel);
+      if(day) day.label = input.value;
+    });
+  });
+
+  app.querySelectorAll('.day-parts .tag').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const dayId = el.closest('[data-day-parts]').dataset.dayParts;
+      const day = _splitDraft.days.find(d => String(d.id) === dayId);
+      const part = el.dataset.part;
+      const idx = day.bodyParts.indexOf(part);
+      if(idx === -1) day.bodyParts.push(part); else day.bodyParts.splice(idx, 1);
+      const selected = day.bodyParts.includes(part);
+      el.style.background = selected ? 'var(--accent)' : '';
+      el.style.color = selected ? 'var(--accent-ink)' : '';
+      el.style.borderColor = selected ? 'var(--accent)' : '';
+    });
+  });
+
+  app.querySelectorAll('[data-remove-day]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      _splitDraft.days = _splitDraft.days.filter(d => String(d.id) !== btn.dataset.removeDay);
+      renderSplitEdit(app);
+    });
+  });
+
+  document.getElementById('addDayBtn').addEventListener('click', ()=>{
+    const nextLetter = String.fromCharCode(65 + _splitDraft.days.length); // A, B, C...
+    _splitDraft.days.push({id: Date.now(), label: `Day ${nextLetter}`, bodyParts: []});
+    renderSplitEdit(app);
+  });
+
+  document.getElementById('saveSplitBtn').addEventListener('click', async ()=>{
+    await setSetting('weekly_template', _splitDraft);
+    _splitDraft = null;
+    toast('Split saved');
+    location.hash = '#/split';
+  });
+}
+
+/* ---------- EXERCISE GROUPS (display-only overlay) ---------- */
+let _groupDraft = null;
+
+async function renderGroups(app){
+  const [groups, exercises] = await Promise.all([getAll('groups'), getAll('exercises')]);
+  exercises.sort((a,b)=>a.name.localeCompare(b.name));
+  const exMap = new Map(exercises.map(e=>[e.id, e]));
+
+  if(!_groupDraft) _groupDraft = {id:null, name:'', exerciseIds:new Set()};
+
+  const groupsHtml = groups.length ? groups.map(g => `
+    <div class="group-card" data-group-id="${g.id}">
+      <div class="row-actions" style="justify-content:space-between;margin-bottom:6px;">
+        <strong>🔗 ${esc(g.name)}</strong>
+        <div class="row-actions">
+          <button class="btn small ghost" data-edit-group="${g.id}">Edit</button>
+          <button class="btn small danger" data-delete-group="${g.id}">Delete</button>
+        </div>
+      </div>
+      <span class="meta">${(g.exerciseIds||[]).map(id => exMap.get(id)?.name).filter(Boolean).join(', ') || 'No exercises in this group'}</span>
+    </div>
+  `).join('') : `<p class="meta">No groups yet — create one below to link exercises like "Pull-up Progression" without changing anything in your exercise bank.</p>`;
+
+  app.innerHTML = `
+    <div class="page">
+      <h1>Exercise Groups</h1>
+      <p class="meta" style="line-height:1.5;margin-bottom:16px;">
+        Group related exercises for reference — e.g. Dead Hangs, Push-ups and Lat Pulldowns
+        under "Pull-up Progression". This is purely visual: it doesn't touch your exercise data,
+        and grouped exercises show a badge wherever they appear.
+      </p>
+      ${groupsHtml}
+
+      <h2 style="margin-top:20px;">${_groupDraft.id ? 'Edit group' : 'New group'}</h2>
+      <div class="field">
+        <label>Group name</label>
+        <input type="text" id="groupName" value="${esc(_groupDraft.name)}" placeholder="e.g. Pull-up Progression">
+      </div>
+      <div class="field">
+        <label>Members</label>
+        <input type="search" id="groupFilter" placeholder="Filter exercises…">
+        <div class="checklist-scroll" id="groupChecklist">
+          ${exercises.map(ex => `
+            <label>
+              <input type="checkbox" value="${ex.id}" data-group-member ${_groupDraft.exerciseIds.has(ex.id) ? 'checked' : ''}>
+              ${esc(ex.name)}
+            </label>
+          `).join('')}
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn block" id="saveGroupBtn">${_groupDraft.id ? 'Save changes' : 'Create group'}</button>
+        ${_groupDraft.id ? `<button class="btn ghost" id="cancelGroupBtn">Cancel</button>` : ''}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('groupName').addEventListener('input', (e)=>{
+    _groupDraft.name = e.target.value;
+  });
+  document.getElementById('groupFilter').addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('#groupChecklist label').forEach(label=>{
+      label.style.display = label.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+  document.querySelectorAll('[data-group-member]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const id = Number(cb.value);
+      if(cb.checked) _groupDraft.exerciseIds.add(id);
+      else _groupDraft.exerciseIds.delete(id);
+    });
+  });
+  document.getElementById('saveGroupBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('groupName').value.trim();
+    if(!name){ toast('Name the group first'); return; }
+    if(!_groupDraft.exerciseIds.size){ toast('Pick at least one exercise'); return; }
+    const payload = {name, exerciseIds: Array.from(_groupDraft.exerciseIds)};
+    if(_groupDraft.id){
+      payload.id = _groupDraft.id;
+      await putOne('groups', payload);
+      toast('Group updated');
+    } else {
+      await addOne('groups', payload);
+      toast('Group created');
+    }
+    _groupDraft = null;
+    renderGroups(app);
+  });
+  const cancelBtn = document.getElementById('cancelGroupBtn');
+  if(cancelBtn){
+    cancelBtn.addEventListener('click', ()=>{
+      _groupDraft = null;
+      renderGroups(app);
+    });
+  }
+  document.querySelectorAll('[data-edit-group]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const g = groups.find(x => x.id === Number(btn.dataset.editGroup));
+      _groupDraft = {id: g.id, name: g.name, exerciseIds: new Set(g.exerciseIds||[])};
+      renderGroups(app);
+    });
+  });
+  document.querySelectorAll('[data-delete-group]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!(await appConfirm('Delete this group? The exercises themselves are unaffected.', 'Delete'))) return;
+      await deleteOne('groups', Number(btn.dataset.deleteGroup));
+      toast('Group deleted');
+      renderGroups(app);
+    });
+  });
+}
+
+/* ---------- HISTORY LIST ---------- */
+let _historyGroupBy = 'date';
+
+async function renderHistoryList(app){
+  const [entries, exercises] = await Promise.all([getAll('history'), getAll('exercises')]);
+  const exMap = new Map(exercises.map(e=>[e.id, e]));
+
+  const groups = {};
+  for(const h of entries){
+    const ex = exMap.get(h.exercise_id);
+    const key = _historyGroupBy === 'exercise' ? (ex ? ex.name : 'Unknown exercise') : h.act_date;
+    (groups[key] = groups[key] || []).push({...h, exName: ex ? ex.name : 'Unknown exercise'});
+  }
+  let keys = Object.keys(groups);
+  keys = _historyGroupBy === 'exercise'
+    ? keys.sort((a,b)=>a.localeCompare(b))
+    : keys.sort((a,b)=> b.localeCompare(a));
+
+  const body = keys.length ? keys.map(k=>`
+    <h3 class="group-title">${esc(_historyGroupBy === 'date' ? fmtDate(k) : k)}</h3>
+    <ul class="hist-list">
+      ${groups[k].map(h=>`
+        <li class="hist-item">
+          <div>
+            <strong>${esc(h.exName)}</strong>
+            <span class="meta">${esc(fmtDate(h.act_date))}${h.details ? ' · ' + esc(h.details) : ''}</span>
+          </div>
+          <div class="row-actions" style="margin-top:8px;">
+            <a class="btn small ghost" href="#/history/${h.id}/edit">Edit</a>
+            <button class="btn small danger" data-del-hist="${h.id}">Delete</button>
+          </div>
+        </li>
+      `).join('')}
+    </ul>
+  `).join('') : `<p class="empty">No workouts logged yet. Mark something for today and tap "Log set".</p>`;
+
+  app.innerHTML = `
+    <div class="page">
+      <h1>History</h1>
+      <div class="toggle-group">
+        <button class="btn ${_historyGroupBy==='date'?'':'ghost'}" data-group="date">By date</button>
+        <button class="btn ${_historyGroupBy==='exercise'?'':'ghost'}" data-group="exercise">By exercise</button>
+      </div>
+      ${body}
+    </div>
+  `;
+  app.querySelectorAll('[data-group]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      _historyGroupBy = btn.dataset.group;
+      renderHistoryList(app);
+    });
+  });
+  app.querySelectorAll('[data-del-hist]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!(await appConfirm('Delete this log entry?', 'Delete'))) return;
+      await deleteOne('history', Number(btn.dataset.delHist));
+      toast('Entry deleted');
+      renderHistoryList(app);
+    });
+  });
+}
+
+/* ---------- HISTORY FORM (new / edit) ---------- */
+async function renderHistoryForm(app, opts){
+  let exercise, existing = null;
+  if(opts.historyId){
+    existing = await getOne('history', opts.historyId);
+    if(!existing){ app.innerHTML = `<div class="page"><p class="empty">Entry not found.</p></div>`; return; }
+    exercise = await getOne('exercises', existing.exercise_id);
+  } else {
+    exercise = await getOne('exercises', opts.exerciseId);
+  }
+  if(!exercise){ app.innerHTML = `<div class="page"><p class="empty">Exercise not found.</p></div>`; return; }
+
+  let prefillDetails = '';
+  if(existing){
+    prefillDetails = existing.details || '';
+  } else {
+    const hist = await getByIndex('history','by_exercise', exercise.id);
+    hist.sort((a,b)=> a.act_date < b.act_date ? 1 : -1);
+    prefillDetails = hist[0] ? hist[0].details : '';
+  }
+  const dateVal = existing ? existing.act_date : todayStr();
+
+  app.innerHTML = `
+    <div class="page">
+      <h1>${existing ? 'Edit Log' : 'Log Set'}</h1>
+      <h2>${esc(exercise.name)}</h2>
+      <form id="histForm">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="h_date" value="${esc(dateVal)}" required>
+        </div>
+        <div class="field">
+          <label>Details</label>
+          <textarea id="h_details" placeholder="e.g. 3x10 @ 90lb">${esc(prefillDetails)}</textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn block">${existing ? 'Save changes' : 'Save log'}</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.getElementById('histForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const payload = {
+      act_date: document.getElementById('h_date').value,
+      details: document.getElementById('h_details').value,
+      exercise_id: exercise.id,
+    };
+    if(existing){
+      payload.id = existing.id;
+      await putOne('history', payload);
+      toast('Log updated');
+    } else {
+      await addOne('history', payload);
+      toast('Set logged');
+    }
+    location.hash = '#/history';
+  });
+}
+
+/* ---------- BACKUP / RESTORE ---------- */
+async function renderBackup(app){
+  const [exercises, history, marked] = await Promise.all([getAll('exercises'), getAll('history'), getAll('marked')]);
+  app.innerHTML = `
+    <div class="page">
+      <h1>Backup &amp; Restore</h1>
+      <p class="meta" style="line-height:1.5;margin-bottom:16px;">
+        Everything lives only on this device. Export a backup occasionally so a browser data
+        clear or a new phone doesn't wipe your history.
+      </p>
+      <div class="kv"><span>Exercises</span><span class="mono">${exercises.length}</span></div>
+      <div class="kv"><span>Logged sets</span><span class="mono">${history.length}</span></div>
+      <div class="kv"><span>Marked for today</span><span class="mono">${marked.filter(m=>m.marked_on===todayStr()).length}</span></div>
+      <div class="form-actions">
+        <button class="btn block" id="exportBtn">Export backup (.json)</button>
+      </div>
+      <hr class="rule">
+      <div class="field">
+        <label>Restore from backup</label>
+        <input type="file" id="importFile" accept="application/json">
+        <div class="hint">This replaces everything currently stored on this device.</div>
+      </div>
+      <hr class="rule">
+      <div class="form-actions">
+        <button class="btn danger block" id="wipeBtn">Erase all data</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('exportBtn').addEventListener('click', async ()=>{
+    const data = {
+      exported_at: new Date().toISOString(),
+      exercises: await getAll('exercises'),
+      history: await getAll('history'),
+      marked: await getAll('marked'),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `iron-log-backup-${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    toast('Backup downloaded');
+  });
+  document.getElementById('importFile').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    if(!(await appConfirm('This will replace all current data with the backup file. Continue?', 'Restore'))) return;
+    try{
+      const text = await file.text();
+      const data = JSON.parse(text);
+      await clearStore('exercises');
+      await clearStore('history');
+      await clearStore('marked');
+      for(const ex of (data.exercises||[])) await putOne('exercises', ex);
+      for(const h of (data.history||[])) await putOne('history', h);
+      for(const m of (data.marked||[])) await putOne('marked', m);
+      toast('Backup restored');
+      renderBackup(app);
+    }catch(err){
+      toast('Could not read that file: ' + err.message);
+    }
+  });
+  document.getElementById('wipeBtn').addEventListener('click', async ()=>{
+    if(!(await appConfirm('Erase ALL exercises, history and marks on this device? This cannot be undone.', 'Erase everything'))) return;
+    await clearStore('exercises');
+    await clearStore('history');
+    await clearStore('marked');
+    toast('All data erased');
+    renderBackup(app);
+  });
+}
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
