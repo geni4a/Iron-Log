@@ -462,11 +462,11 @@ async function allExercisesDerived(){
 }
 async function isMarkedToday(exerciseId){
   const m = await getOne('marked', exerciseId);
-  return !!(m && m.marked_on === todayStr());
+  return !!m;
 }
 async function toggleMark(exerciseId){
   const existing = await getOne('marked', exerciseId);
-  if(existing && existing.marked_on === todayStr()){
+  if(existing){
     await deleteOne('marked', exerciseId);
     return false;
   } else {
@@ -818,7 +818,7 @@ function targetTagsHtml(ex){
 
 async function renderHome(app){
   const derived = await allExercisesDerived();
-  const marked = (await getAll('marked')).filter(m => m.marked_on === todayStr());
+  const marked = await getAll('marked');
   const markedIds = new Set(marked.map(m => m.exercise_id));
   const todays = derived.filter(ex => markedIds.has(ex.id));
   const exerciseGroups = await getAll('groups');
@@ -946,7 +946,7 @@ async function renderExerciseResults(){
     return;
   }
   const [markedRows, groups] = await Promise.all([getAll('marked'), getAll('groups')]);
-  const markedToday = new Set(markedRows.filter(m=>m.marked_on===todayStr()).map(m=>m.exercise_id));
+  const markedToday = new Set(markedRows.map(m=>m.exercise_id));
   const groupMap = buildExerciseGroupMap(groups);
   container.innerHTML = `<ul class="ex-list">${filtered.map(ex=>exerciseRowHtml(ex, markedToday.has(ex.id), groupMap)).join('')}</ul>`;
   wireExerciseRowEvents(container);
@@ -1210,11 +1210,13 @@ async function renderExerciseForm(app, id){
     document.getElementById('logSubmitBtn').addEventListener('click', async ()=>{
       const exId = Number(logSelect.value);
       if(!exId){ toast('Add an exercise first'); return; }
+      const actDate = document.getElementById('logDate').value || todayStr();
       await addOne('history', {
         exercise_id: exId,
-        act_date: document.getElementById('logDate').value || todayStr(),
+        act_date: actDate,
         details: logDetails.value,
       });
+      if(actDate === todayStr()) await unmarkForToday(exId);
       toast('Set logged');
       location.hash = '#/history';
     });
@@ -1850,6 +1852,7 @@ async function renderHistoryForm(app, opts){
       toast('Log updated');
     } else {
       await addOne('history', payload);
+      if(payload.act_date === todayStr()) await unmarkForToday(exercise.id);
       toast('Set logged');
     }
     location.hash = '#/history';
@@ -1868,7 +1871,7 @@ async function renderBackup(app){
       </p>
       <div class="kv"><span>Exercises</span><span class="mono">${exercises.length}</span></div>
       <div class="kv"><span>Logged sets</span><span class="mono">${history.length}</span></div>
-      <div class="kv"><span>Marked for today</span><span class="mono">${marked.filter(m=>m.marked_on===todayStr()).length}</span></div>
+      <div class="kv"><span>Currently marked</span><span class="mono">${marked.length}</span></div>
       <div class="form-actions">
         <button class="btn block" id="exportBtn">Export backup (.json)</button>
       </div>
