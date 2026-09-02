@@ -314,7 +314,13 @@ function esc(s){
 function parseList(str){
   return (str||'').split(',').map(s=>s.trim()).filter(Boolean);
 }
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+function todayStr(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 function fmtDate(d){
   if(!d) return '';
   const dt = new Date(d+'T00:00:00');
@@ -691,9 +697,12 @@ async function generatePlan(selectedParts, limit){
 function filterExercises(list, f){
   let out = list;
   const days = Number(f.notUsedSinceDays) || 0;
-  const cutoff = new Date();
+  const cutoff = new Date(todayStr() + 'T00:00:00');
   cutoff.setDate(cutoff.getDate() - days);
-  const cutoffStr = cutoff.toISOString().slice(0,10);
+  const cy = cutoff.getFullYear();
+  const cm = String(cutoff.getMonth() + 1).padStart(2, '0');
+  const cd = String(cutoff.getDate()).padStart(2, '0');
+  const cutoffStr = `${cy}-${cm}-${cd}`;
   out = out.filter(ex => !ex.last_used || ex.last_used <= cutoffStr);
 
   if(f.name) out = out.filter(ex => ex.name.toLowerCase().includes(f.name.toLowerCase()));
