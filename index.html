@@ -98,6 +98,8 @@
     margin-bottom:8px;
   }
   .today-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .today-item-head strong a{color:var(--teal);text-decoration:none;}
+  .today-item-head strong a:active{opacity:0.7;}
   .meta{display:block;font-size:12px;color:var(--ink-dim);margin-top:2px;}
   .row-actions{display:flex;gap:6px;flex-shrink:0;}
   /* Buttons */
@@ -842,7 +844,7 @@ async function renderHome(app){
         <li class="today-item" data-id="${ex.id}">
           <div class="today-item-head">
             <div>
-              <strong>${esc(ex.name)}</strong>
+              <strong>${ex.hyperlink ? `<a href="${esc(ex.hyperlink)}" target="_blank" rel="noopener">${esc(ex.name)} ↗</a>` : esc(ex.name)}</strong>
               <span class="meta">${ex.last_used ? 'Last logged ' + esc(fmtDate(ex.last_used)) : 'Never logged'}</span>
               ${ex.last_details ? `<div class="meta detail-block">${esc(ex.last_details)}</div>` : ''}
             </div>
